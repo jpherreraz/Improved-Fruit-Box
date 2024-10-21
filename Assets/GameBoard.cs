@@ -6,6 +6,8 @@ public class GameBoard : MonoBehaviour
 {
     [SerializeField]
     private Apple apple;
+    [SerializeField]
+    private Selector selector;
     private int[,] board = {
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -18,6 +20,7 @@ public class GameBoard : MonoBehaviour
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
     };
+    private Apple[,] appleBoard = new Apple[10,17];
     private int rows = 10;
     private int cols = 17;
 
@@ -32,8 +35,36 @@ public class GameBoard : MonoBehaviour
 
     // Update is called once per frame
     void Update()
-    {
-        
+    {   
+        int total = 0;
+        if (selector.hasFinishedDragging()) {
+            float startX = adjustBounds(selector.getStartMousePos().x, true);
+            float endX = adjustBounds(selector.getCurrentMousePos().x, true);
+            float startY = adjustBounds(selector.getStartMousePos().y, false);
+            float endY = adjustBounds(selector.getCurrentMousePos().y, false);
+            float signX = Mathf.Sign(endX - startX);
+            float signY = Mathf.Sign(endY - startY);
+            for (float i = (int) (startX + 0.5 + signX/2); i * signX < endX * signX; i += signX) {
+                for (float j = (int) (startY + 0.5 + signY/2); j * signY < endY * signY; j += signY) {
+                    if (appleBoard[(int) j, (int) i] != null) {
+                        int value = appleBoard[(int) j, (int) i].GetValue();
+                        total += value;
+                    }
+                }
+            }
+            Debug.Log(total);
+            if (total == 10) {
+                for (float i = (int) (startX + 0.5 + signX/2); i * signX < endX * signX; i += signX) {
+                    for (float j = (int) (startY + 0.5 + signY/2); j * signY < endY * signY; j += signY) {
+                        if (appleBoard[(int) j, (int) i] != null) {
+                            Destroy(appleBoard[(int) j, (int) i].gameObject);
+                            Debug.Log("Destroyed (" + i + ", " + j + ")");
+                            appleBoard[(int) j, (int) i] = null;
+                        }
+                    }
+                }
+            }
+        }
     }
     
     private void GenerateGroups() {
@@ -47,9 +78,25 @@ public class GameBoard : MonoBehaviour
             else if (getNumZeroes() == 4) {
                 if (Random.Range(0,2) == 0) {
                     GenerateGroup(2);
+                    GenerateGroup(2);
                 } else {
                     GenerateGroup(4);
                 }
+            } else if (getNumZeroes() == 5) {
+                if (Random.Range(0,2) == 0) {
+                    GenerateGroup(2);
+                    GenerateGroup(3);
+                } else {
+                    GenerateGroup(5);
+                }
+            } else if (getNumZeroes() == 6) {
+                if (Random.Range(0,3) == 0) {
+                    GenerateGroup(2);
+                } else {
+                    GenerateGroup(3);
+                    GenerateGroup(3);
+                }
+                
             } else {
                 int rand2 = Random.Range(0,101);
                 if (0 < rand2 && rand2 <= 55) {
@@ -81,8 +128,8 @@ public class GameBoard : MonoBehaviour
     }
     private void GenerateApple(int x, int y) {
         apple.transform.position = new Vector3(y, x, 0);
-        apple.SetValue(board[x, y]);
-        Instantiate(apple);
+        appleBoard[x, y] = Instantiate(apple);
+        appleBoard[x, y].SetValue(board[x, y]);
     }
 
     private void GenerateApples() {
@@ -199,5 +246,16 @@ public class GameBoard : MonoBehaviour
             }
         }
         return zeroes;
+    }
+    private float adjustBounds(float num, bool isX) {
+        if (num <= -1) {
+            return -0.5f;
+        } else if (isX && num >= cols) {
+            return cols - 0.5f;
+        } else if (!isX && num >= rows) {
+            return rows - 0.5f;
+        } else {
+            return num;
+        }
     }
 }

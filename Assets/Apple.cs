@@ -7,6 +7,7 @@ public class Apple : MonoBehaviour
 {   
     [SerializeField]
     private Text text;
+    private int value;
     // Start is called before the first frame update
     void Start()
     {
@@ -19,7 +20,12 @@ public class Apple : MonoBehaviour
         
     }
 
-    public void SetValue(int value) {
-        text.text = value.ToString();
+    public void SetValue(int val) {
+        this.value = val;
+        text.text = val.ToString();
+    }
+
+    public int GetValue() {
+        return value;
     }
 }
