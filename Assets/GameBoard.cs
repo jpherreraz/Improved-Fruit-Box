@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameBoard : MonoBehaviour
 {
@@ -8,6 +9,8 @@ public class GameBoard : MonoBehaviour
     private Apple apple;
     [SerializeField]
     private Selector selector;
+    [SerializeField]
+    private Text text;
     private int[,] board = {
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -23,13 +26,31 @@ public class GameBoard : MonoBehaviour
     private Apple[,] appleBoard = new Apple[10,17];
     private int rows = 10;
     private int cols = 17;
-
+    private int score = 0;
+    private int groupsOf2 = 0;
+    private int groupsOf3 = 0;
+    private int groupsOf4 = 0;
+    private int groupsOf5 = 0;
 
     // Start is called before the first frame update
     void Start()
     {
         GenerateGroups();
         GenerateApples();
+        Debug.Log(
+            "1: " + getCount(1) + 
+            "\n2: " + getCount(2) + 
+            "\n3: " + getCount(3) + 
+            "\n4: " + getCount(4) + 
+            "\n5: " + getCount(5) + 
+            "\n6: " + getCount(6) + 
+            "\n7: " + getCount(7) + 
+            "\n8: " + getCount(8) + 
+            "\n9: " + getCount(9) +
+            "\nGroups of 2: " + groupsOf2 +
+            "\nGroups of 3: " + groupsOf3 +
+            "\nGroups of 4: " + groupsOf4 +
+            "\nGroups of 5: " + groupsOf5);
         //testthing();
     }
 
@@ -58,6 +79,8 @@ public class GameBoard : MonoBehaviour
                     for (float j = (int) (startY + 0.5 + signY/2); j * signY < endY * signY; j += signY) {
                         if (appleBoard[(int) j, (int) i] != null) {
                             Destroy(appleBoard[(int) j, (int) i].gameObject);
+                            score += 1;
+                            text.text = score.ToString();
                             Debug.Log("Destroyed (" + i + ", " + j + ")");
                             appleBoard[(int) j, (int) i] = null;
                         }
@@ -69,27 +92,28 @@ public class GameBoard : MonoBehaviour
     
     private void GenerateGroups() {
         while (!IsDone()) {
-            if (getNumZeroes() == 2) {
+            // GenerateGroup(2);
+            if (getCount(0) == 2) {
                 GenerateGroup(2);
             }
-            else if (getNumZeroes() == 3) {
+            else if (getCount(0) == 3) {
                 GenerateGroup(3);
             }
-            else if (getNumZeroes() == 4) {
+            else if (getCount(0) == 4) {
                 if (Random.Range(0,2) == 0) {
                     GenerateGroup(2);
                     GenerateGroup(2);
                 } else {
                     GenerateGroup(4);
                 }
-            } else if (getNumZeroes() == 5) {
+            } else if (getCount(0) == 5) {
                 if (Random.Range(0,2) == 0) {
                     GenerateGroup(2);
                     GenerateGroup(3);
                 } else {
                     GenerateGroup(5);
                 }
-            } else if (getNumZeroes() == 6) {
+            } else if (getCount(0) == 6) {
                 if (Random.Range(0,3) == 0) {
                     GenerateGroup(2);
                 } else {
@@ -98,12 +122,22 @@ public class GameBoard : MonoBehaviour
                 }
                 
             } else {
-                int rand2 = Random.Range(0,101);
-                if (0 < rand2 && rand2 <= 55) {
+                // int rand2 = Random.Range(0,101);
+                // if (0 < rand2 && rand2 <= 55) {
+                //     GenerateGroup(2);
+                // } else if (55 < rand2 && rand2 <= 80) {
+                //     GenerateGroup(3);
+                // } else if (80 < rand2 && rand2 <= 97) {
+                //     GenerateGroup(4);
+                // } else {
+                //     GenerateGroup(5);
+                // }
+                int rand2 = Random.Range(0,4);
+                if (rand2 == 0) {
                     GenerateGroup(2);
-                } else if (55 < rand2 && rand2 <= 80) {
+                } else if (rand2 == 1) {
                     GenerateGroup(3);
-                } else if (80 < rand2 && rand2 <= 97) {
+                } else if (rand2 == 2) {
                     GenerateGroup(4);
                 } else {
                     GenerateGroup(5);
@@ -117,13 +151,63 @@ public class GameBoard : MonoBehaviour
         int[] coords = GenerateCoords();
         coordPath[0,0] = coords[0];
         coordPath[0,1] = coords[1];
+        int minI = coords[0];
+        int minJ = coords[1];
+        int maxI = coords[0];
+        int maxJ = coords[1];
         board[coords[0], coords[1]] = numbers[0];
+
+        // Generate group path
         for (int i = 1; i < size; i++) {
-            FindNextCoords(coords);
+            // FindNextCoords(coords);
+            coords = GenerateCoords();
             coordPath[i, 0] = coords[0];
             coordPath[i, 1] = coords[1];
+            if (coords[0] > maxI) {
+                maxI = coords[0];
+            } else if (coords[0] < minI) {
+                minI = coords[0];
+            }
+            if (coords[1] > maxJ) {
+                maxJ = coords[1];
+            } else if (coords[1] < minJ) {
+                minJ = coords[1];
+            }
             board[coords[0], coords[1]] = numbers[i];
         }
+        bool valid = true;
+        // Check if valid group path
+        for (int i = minI; i <= maxI; i++) {
+            for (int j = minJ; j <= maxJ; j++) {
+                if (board[i, j] == 0) {
+                    valid = false;
+                }
+            }
+
+        }
+        if (!valid) {
+            for (int i = 0; i < size; i++) {
+                board[coordPath[i, 0], coordPath[i, 1]] = 0;
+            }
+            return;
+        }
+        switch (size) {
+            case 2:
+                groupsOf2++;
+                break;
+            case 3:
+                groupsOf3++;
+                break;
+            case 4:
+                groupsOf4++;
+                break;
+            case 5:
+                groupsOf5++;
+                break;
+            default:
+                break;
+        }
+
 
     }
     private void GenerateApple(int x, int y) {
@@ -236,16 +320,16 @@ public class GameBoard : MonoBehaviour
         }
     }
 
-    private int getNumZeroes() {
-        int zeroes = 0;
+    private int getCount(int num) {
+        int count = 0;
         for (int i = 0; i < rows; i++) {
             for(int j = 0; j < cols; j++) {
-                if (board[i, j] == 0) {
-                    zeroes++;
+                if (board[i, j] == num) {
+                    count++;
                 }
             }
         }
-        return zeroes;
+        return count;
     }
     private float adjustBounds(float num, bool isX) {
         if (num <= -1) {
